@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { api, patchForm, postForm } from "../lib/api";
 import { assetUrl } from "../lib/assetUrl";
@@ -7,6 +7,19 @@ import { productCover, productImageList } from "../lib/productImages";
 
 const admField =
   "mt-1.5 w-full rounded-xl border border-white/10 bg-zinc-900/70 px-4 py-3 text-sm text-ink outline-none focus:border-accent/40 focus:ring-2 focus:ring-accent/25";
+
+function fileLooksLikeAllowedImage(f) {
+  if (!(f instanceof File) || f.size <= 0) return false;
+  if (/^image\/(jpeg|png|webp|gif)$/i.test(f.type)) return true;
+  if (f.type === "" || /^application\/octet-stream$/i.test(f.type)) {
+    return /\.(jpe?g|png|webp|gif)$/i.test(f.name);
+  }
+  return false;
+}
+
+function filterAllowedImages(files) {
+  return files.filter(fileLooksLikeAllowedImage);
+}
 
 const emptyForm = {
   name: "",
@@ -31,6 +44,16 @@ export function AdminProducts() {
   const [form, setForm] = useState(emptyForm);
   const [galleryKeep, setGalleryKeep] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
+  const fileInputRef = useRef(null);
+
+  const newFilePreviewUrls = useMemo(
+    () => newFiles.map((file) => URL.createObjectURL(file)),
+    [newFiles]
+  );
+
+  useEffect(() => {
+    return () => newFilePreviewUrls.forEach((u) => URL.revokeObjectURL(u));
+  }, [newFilePreviewUrls]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -60,6 +83,7 @@ export function AdminProducts() {
     setGalleryKeep([]);
     setNewFiles([]);
     setError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function startEdit(p) {
@@ -79,6 +103,7 @@ export function AdminProducts() {
     setGalleryKeep(productImageList(p));
     setNewFiles([]);
     setError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function removeKeptUrl(url) {
@@ -86,10 +111,29 @@ export function AdminProducts() {
   }
 
   function onPickFiles(e) {
-    const list = e.target.files;
-    if (!list?.length) return;
-    setNewFiles((prev) => [...prev, ...Array.from(list)]);
-    e.target.value = "";
+    const input = e.target;
+    const raw = input.files?.length ? Array.from(input.files) : [];
+    const allowed = filterAllowedImages(raw);
+
+    if (raw.length > 0 && allowed.length === 0) {
+      setError(
+        "Could not use those files. Use JPEG, PNG, WebP, or GIF. (iPhone HEIC is not supported — use “Image URLs” or convert.)"
+      );
+      window.setTimeout(() => {
+        input.value = "";
+      }, 0);
+      return;
+    }
+
+    if (allowed.length > 0) {
+      setError("");
+      setNewFiles((prev) => [...prev, ...allowed]);
+    }
+
+    // Defer reset so WebKit/Safari keeps a stable reference to the chosen files we already copied.
+    window.setTimeout(() => {
+      input.value = "";
+    }, 0);
   }
 
   function removeNewFileAt(index) {
@@ -99,7 +143,13 @@ export function AdminProducts() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    const hasNewFiles = newFiles.length > 0;
+
+    let filesForUpload = newFiles;
+    if (filesForUpload.length === 0 && fileInputRef.current?.files?.length) {
+      filesForUpload = filterAllowedImages(Array.from(fileInputRef.current.files));
+    }
+
+    const hasNewFiles = filesForUpload.length > 0;
     const hasExtraUrls = form.extraImageUrls.trim().length > 0;
     if (!editingId) {
       if (!hasNewFiles && !hasExtraUrls) {
@@ -126,7 +176,7 @@ export function AdminProducts() {
       if (form.extraImageUrls.trim()) {
         fd.append("imageUrls", form.extraImageUrls.trim());
       }
-      newFiles.forEach((file) => {
+      filesForUpload.forEach((file) => {
         fd.append("images", file);
       });
 
@@ -206,36 +256,6 @@ export function AdminProducts() {
                         onClick={() => removeKeptUrl(url)}
                         className="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded bg-red-600 text-[10px] font-bold text-white hover:bg-red-500"
                         aria-label="Remove image"
-                      >
-                        ×
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {newFiles.length > 0 && (
-              <div>
-                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-500">
-                  New uploads (saved on submit)
-                </p>
-                <ul className="flex flex-wrap gap-2">
-                  {newFiles.map((file, idx) => (
-                    <li
-                      key={`${file.name}-${idx}`}
-                      className="relative h-20 w-16 overflow-hidden rounded-lg border border-accent/40"
-                    >
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeNewFileAt(idx)}
-                        className="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded bg-red-600 text-[10px] font-bold text-white hover:bg-red-500"
-                        aria-label="Remove new file"
                       >
                         ×
                       </button>
@@ -357,16 +377,53 @@ export function AdminProducts() {
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500" htmlFor="adm-file">
                 Image files {editingId ? "(add more)" : ""}
+                {newFiles.length > 0 && (
+                  <span className="ml-2 font-extrabold text-accent">
+                    · {newFiles.length} selected (preview below)
+                  </span>
+                )}
               </label>
               <input
+                ref={fileInputRef}
                 id="adm-file"
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
+                accept="image/*"
                 multiple
                 onChange={onPickFiles}
                 className="mt-1.5 block w-full text-sm text-zinc-500 file:mr-4 file:rounded-xl file:border-0 file:bg-gradient-to-b file:from-[#eeff66] file:to-[#b8e600] file:px-4 file:py-2 file:text-sm file:font-bold file:text-zinc-950"
               />
-              <p className="mt-1 text-xs text-zinc-600">Select multiple files (max 15 per save). First in gallery is the cover.</p>
+              <p className="mt-1 text-xs text-zinc-600">
+                JPEG, PNG, WebP, or GIF (max 15 per save). iPhone HEIC is not supported — convert or use URLs.
+              </p>
+              {newFiles.length > 0 && (
+                <div className="mt-4 rounded-xl border border-accent/25 bg-accent/5 p-3">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">
+                    New uploads (saved when you submit)
+                  </p>
+                  <ul className="flex flex-wrap gap-2">
+                    {newFiles.map((file, idx) => (
+                      <li
+                        key={`${file.name}-${file.lastModified}-${idx}`}
+                        className="relative h-24 w-20 overflow-hidden rounded-lg border border-accent/40 bg-zinc-950"
+                      >
+                        <img
+                          src={newFilePreviewUrls[idx]}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeNewFileAt(idx)}
+                          className="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded bg-red-600 text-[10px] font-bold text-white hover:bg-red-500"
+                          aria-label="Remove new file"
+                        >
+                          ×
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500" htmlFor="adm-urls">
