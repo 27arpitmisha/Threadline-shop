@@ -4,11 +4,21 @@ import path from "path";
 import multer from "multer";
 import { Product } from "../models/Product.js";
 import { adminRequired } from "../middleware/auth.js";
+import {
+  cloudinaryConfigured,
+  destroyImageByUrl,
+  uploadImageBuffer,
+  isCloudinaryUrl,
+} from "../lib/cloudinaryMedia.js";
+
+const useCloudinary = cloudinaryConfigured();
 
 const uploadDir = path.join(process.cwd(), "uploads", "products");
-await fs.mkdir(uploadDir, { recursive: true });
+if (!useCloudinary) {
+  await fs.mkdir(uploadDir, { recursive: true });
+}
 
-const storage = multer.diskStorage({
+const diskStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname) || ".jpg";
@@ -16,16 +26,18 @@ const storage = multer.diskStorage({
   },
 });
 
+const fileFilter = (_req, file, cb) => {
+  if (/^image\/(jpeg|png|webp|gif)$/i.test(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only JPEG, PNG, WebP, or GIF images are allowed"));
+  }
+};
+
 const upload = multer({
-  storage,
+  storage: useCloudinary ? multer.memoryStorage() : diskStorage,
   limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (/^image\/(jpeg|png|webp|gif)$/i.test(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only JPEG, PNG, WebP, or GIF images are allowed"));
-    }
-  },
+  fileFilter,
 });
 
 const router = Router();
@@ -76,9 +88,31 @@ async function removeLocalImage(imageUrl) {
   }
 }
 
-function pathsFromFiles(files) {
+async function removeStoredImage(url) {
+  if (isCloudinaryUrl(url)) {
+    await destroyImageByUrl(url);
+    return;
+  }
+  await removeLocalImage(url);
+}
+
+function pathsFromDiskFiles(files) {
   if (!files?.length) return [];
   return files.map((f) => `/uploads/products/${f.filename}`);
+}
+
+async function urlsFromUploadedFiles(files) {
+  if (!files?.length) return [];
+  if (useCloudinary) {
+    const out = [];
+    for (const f of files) {
+      if (!f.buffer?.length) continue;
+      const url = await uploadImageBuffer(f.buffer, f.originalname);
+      out.push(url);
+    }
+    return out;
+  }
+  return pathsFromDiskFiles(files);
 }
 
 /** External URLs from imageUrls (JSON array or newline/comma list) and legacy imageUrl. */
@@ -156,7 +190,14 @@ router.post("/products", runUploadArray, async (req, res) => {
     if (Number.isNaN(priceNum) || priceNum < 0) {
       return res.status(400).json({ message: "Valid price is required" });
     }
-    const uploads = pathsFromFiles(req.files);
+    let uploads;
+    try {
+      uploads = await urlsFromUploadedFiles(req.files);
+    } catch (upErr) {
+      return res.status(502).json({
+        message: upErr.message || "Image upload to storage failed. Check Cloudinary configuration.",
+      });
+    }
     const external = parseExternalImageUrls(req.body);
     const images = dedupeImages([...uploads, ...external]);
     if (!images.length) {
@@ -234,11 +275,18 @@ router.patch("/products/:id", runUploadArray, async (req, res) => {
 
     for (const url of prev) {
       if (!keep.includes(url)) {
-        await removeLocalImage(url);
+        await removeStoredImage(url);
       }
     }
 
-    const newUploads = pathsFromFiles(req.files);
+    let newUploads;
+    try {
+      newUploads = await urlsFromUploadedFiles(req.files);
+    } catch (upErr) {
+      return res.status(502).json({
+        message: upErr.message || "Image upload to storage failed. Check Cloudinary configuration.",
+      });
+    }
     const extraExternal = parseExternalImageUrls(req.body);
     const images = dedupeImages([...keep, ...newUploads, ...extraExternal]);
 
@@ -264,7 +312,7 @@ router.delete("/products/:id", async (req, res) => {
       product.image || "",
     ]);
     for (const u of all) {
-      await removeLocalImage(u);
+      await removeStoredImage(u);
     }
     res.json({ ok: true });
   } catch (e) {

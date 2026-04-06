@@ -9,6 +9,7 @@ import productRoutes from "./routes/products.js";
 import cartRoutes from "./routes/cart.js";
 import orderRoutes from "./routes/orders.js";
 import adminRoutes from "./routes/admin.js";
+import { logAdminImageStorageMode } from "./lib/cloudinaryMedia.js";
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -74,6 +75,7 @@ connectDB()
   .then(() => {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server http://0.0.0.0:${PORT}`);
+      logAdminImageStorageMode();
     });
   })
   .catch((e) => {

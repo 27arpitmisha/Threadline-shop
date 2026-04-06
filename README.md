@@ -79,6 +79,7 @@ Use this to get a public API URL before touching the React app. **Postman does n
    | `MONGODB_URI` | Your Atlas SRV URI (must include the password). |
    | `JWT_SECRET` | Long random string (e.g. 32+ chars). |
    | `ADMIN_EMAIL` | *(Optional)* Email that should get admin on register/login. |
+   | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | *(Recommended on Render)* Store admin product images on [Cloudinary](https://cloudinary.com); local `server/uploads` is wiped on restarts. You can also use legacy env names `API_KEY` and `API_SECRET_KEY` if the `CLOUDINARY_*` key/secret vars are unset. |
 
    Render sets **`PORT`** automatically — do not override it.
 
