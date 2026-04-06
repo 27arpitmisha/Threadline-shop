@@ -1,0 +1,9 @@
+{
+  "name": "threadline",
+  "private": true,
+  "description": "Root scripts for production build (e.g. Render). App code lives in client/ and server/.",
+  "scripts": {
+    "build": "npm ci --prefix client && npm run build --prefix client && npm ci --prefix server",
+    "start": "NODE_ENV=production npm start --prefix server"
+  }
+}

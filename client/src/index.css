@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@theme {
+  --font-family-display: "Unbounded", ui-sans-serif, system-ui, sans-serif;
+  --font-family-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --color-paper: #030306;
+  --color-ink: #f4f4f5;
+  --color-muted: #a1a1aa;
+  --color-accent: #d4ff00;
+  --color-accent-hover: #bef200;
+  --color-accent-2: #a78bfa;
+  --color-surface: rgba(24, 24, 27, 0.55);
+  --color-border: rgba(255, 255, 255, 0.09);
+  --color-elevated: #12121a;
+}
+
+@layer base {
+  html {
+    @apply scroll-smooth antialiased;
+  }
+  body {
+    @apply min-h-screen bg-paper font-sans text-ink;
+  }
+}
+
+@layer utilities {
+  .mesh-page {
+    background-color: var(--color-paper);
+    background-image:
+      radial-gradient(ellipse 120% 70% at 50% -25%, rgba(139, 92, 246, 0.28), transparent 52%),
+      radial-gradient(ellipse 50% 45% at 95% 35%, rgba(212, 255, 0, 0.07), transparent),
+      radial-gradient(ellipse 45% 55% at 5% 85%, rgba(34, 211, 238, 0.09), transparent),
+      linear-gradient(180deg, #030306 0%, #0a0a12 40%, #030306 100%);
+    background-attachment: fixed;
+  }
+
+  .mesh-hero {
+    background-image:
+      radial-gradient(ellipse 90% 60% at 70% -10%, rgba(167, 139, 250, 0.45), transparent 50%),
+      radial-gradient(ellipse 50% 40% at 10% 60%, rgba(212, 255, 0, 0.12), transparent),
+      radial-gradient(ellipse 40% 50% at 90% 80%, rgba(34, 211, 238, 0.15), transparent),
+      linear-gradient(165deg, #06060c 0%, #0f0a18 35%, #050508 100%);
+  }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  .glass-nav {
+    @apply border-b border-white/[0.07] bg-zinc-950/55 backdrop-blur-2xl backdrop-saturate-150;
+  }
+
+  .glass-panel {
+    @apply rounded-3xl border border-white/10 bg-zinc-900/45 shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] backdrop-blur-xl;
+  }
+
+  .text-gradient-brand {
+    background: linear-gradient(120deg, #fafafa 0%, #e4e4e7 35%, #d4ff00 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .text-gradient-accent {
+    background: linear-gradient(135deg, #d4ff00 0%, #22d3ee 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .btn-chrome {
+    @apply inline-flex items-center justify-center rounded-2xl bg-gradient-to-b from-[#eeff66] to-[#b8e600] px-8 py-3.5 text-sm font-bold tracking-wide text-zinc-950 shadow-[0_0_48px_-10px_rgba(212,255,0,0.55),0_12px_40px_-12px_rgba(0,0,0,0.5)] transition hover:brightness-105 hover:shadow-[0_0_56px_-8px_rgba(212,255,0,0.65)];
+  }
+
+  .btn-outline-glow {
+    @apply inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/[0.06] px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-md transition hover:border-[#d4ff00]/45 hover:bg-white/10 hover:shadow-[0_0_36px_-12px_rgba(212,255,0,0.35)];
+  }
+
+  .card-3d {
+    transform-style: preserve-3d;
+    transition:
+      transform 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+      box-shadow 0.5s ease;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.35),
+      0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  }
+
+  .card-3d:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow:
+      0 28px 56px -16px rgba(0, 0, 0, 0.55),
+      0 0 0 1px rgba(212, 255, 0, 0.12),
+      0 0 80px -20px rgba(167, 139, 250, 0.35);
+  }
+
+  @media (min-width: 1024px) {
+    .card-3d:hover {
+      transform: perspective(1000px) rotateX(5deg) rotateY(-4deg) translateY(-10px) scale(1.03);
+    }
+  }
+
+  .float-slow {
+    animation: float-y 7s ease-in-out infinite;
+  }
+
+  .float-delayed {
+    animation: float-y 8s ease-in-out 1s infinite;
+  }
+
+  @keyframes float-y {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-12px) rotate(1deg);
+    }
+  }
+
+  .orb-3d {
+    transform-style: preserve-3d;
+    transform: perspective(600px) rotateX(18deg) rotateY(-22deg);
+    box-shadow:
+      0 24px 48px -12px rgba(0, 0, 0, 0.5),
+      0 0 60px -15px rgba(167, 139, 250, 0.4);
+  }
+}

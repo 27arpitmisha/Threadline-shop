@@ -1,0 +1,15 @@
+# API-only Web Service (Phase 1 — test with Postman, then deploy frontend separately).
+# Set MONGODB_URI, JWT_SECRET, and optional ADMIN_EMAIL in the Render dashboard.
+
+services:
+  - type: web
+    name: threadline-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
