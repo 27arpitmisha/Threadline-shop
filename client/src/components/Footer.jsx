@@ -14,7 +14,7 @@ export function Footer() {
       <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <p className="font-display text-xl font-bold text-gradient-accent">Threadline</p>
+            <p className="font-display text-xl font-bold text-gradient-accent">Sageइंक</p>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-zinc-500">
               Limited runs, heavy cotton, fits that actually slap. Built for the feed and the street.
             </p>

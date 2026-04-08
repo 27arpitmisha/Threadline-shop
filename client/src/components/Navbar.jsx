@@ -20,7 +20,7 @@ export function Navbar() {
           to="/"
           className="font-display text-lg font-bold tracking-tight sm:text-xl"
         >
-          <span className="text-gradient-accent">Threadline</span>
+          <span className="text-gradient-accent">Sageइंक</span>
         </Link>
         <nav className="hidden items-center gap-8 md:flex">
           <NavLink to="/shop" className={linkClass}>
