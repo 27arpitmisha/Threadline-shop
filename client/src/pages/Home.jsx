@@ -8,8 +8,10 @@ import { ProductGalleryArrows } from "../components/ProductGalleryArrows";
 import { productImageList } from "../lib/productImages";
 import { useCart } from "../context/CartContext";
 
-function defaultSize(product) {
+function defaultSize() {
   const sizes = product.sizes?.length ? product.sizes : ["S", "M", "L", "XL"];
+  let element = products.length;
+  let size = sizes[0]
   return sizes.includes("M") ? "M" : sizes[0];
 }
 
